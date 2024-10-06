@@ -40,10 +40,9 @@ resource "openstack_networking_floatingip_v2" "worker_floating_ip" {
   pool  = "public"
 }
 
-# Load Balancer
-resource "openstack_lb_loadbalancer_v2" "poiderosa_k8s_lb" {
-  name          = "poiderosa-k8s-lb"
-  vip_subnet_id = "17de9c72-e5dc-4da0-ae0a-013f7e42400e"
+# Data source to reference existing load balancer
+data "openstack_lb_loadbalancer_v2" "poi_atividades" {
+  name = "poi-atividades"
 }
 
 # HTTP Listener for Load Balancer
@@ -51,7 +50,7 @@ resource "openstack_lb_listener_v2" "poiderosa_http_listener" {
   name            = "poiderosa-http-listener"
   protocol        = "TCP"
   protocol_port   = 25180
-  loadbalancer_id = openstack_lb_loadbalancer_v2.poiderosa_k8s_lb.id
+  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
 }
 
 # Pool for HTTP traffic
@@ -87,7 +86,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_master" {
   name            = "poiderosa-master-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22119
-  loadbalancer_id = openstack_lb_loadbalancer_v2.poiderosa_k8s_lb.id
+  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
 }
 
 # SSH Listener for Worker 1 Node
@@ -95,7 +94,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_1" {
   name            = "poiderosa-worker-1-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22120
-  loadbalancer_id = openstack_lb_loadbalancer_v2.poiderosa_k8s_lb.id
+  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
 }
 
 # SSH Listener for Worker 2 Node
@@ -103,7 +102,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_2" {
   name            = "poiderosa-worker-2-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22121
-  loadbalancer_id = openstack_lb_loadbalancer_v2.poiderosa_k8s_lb.id
+  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
 }
 
 # SSH Pool for Master Node
