@@ -1,3 +1,12 @@
+terraform {
+  required_providers {
+    openstack = {
+      source  = "terraform-provider-openstack/openstack"
+      version = "~> 1.0"
+    }
+  }
+}
+
 provider "openstack" {
   user_name   = getenv("USER_NAME")
   tenant_name = getenv("TENANT_NAME")
