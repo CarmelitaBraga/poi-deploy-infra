@@ -29,6 +29,12 @@ resource "openstack_compute_instance_v2" "poiderosa_k8s_worker" {
   floating_ip = openstack_networking_floatingip_v2.worker_floating_ip[count.index].address
 }
 
+# Security group
+resource "openstack_networking_secgroup_v2" "poiderosas_sg" {
+  name        = "projeto-poiderosas-sg"
+  description = "Security group for Poiderosa Kubernetes cluster"
+}
+
 # Floating IP for Master
 resource "openstack_networking_floatingip_v2" "master_floating_ip" {
   pool = "public"
@@ -78,7 +84,7 @@ resource "openstack_networking_secgroup_rule_v2" "allow_ssh" {
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.default.id
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
 }
 
 # SSH Listener for Master Node
@@ -161,7 +167,7 @@ resource "openstack_networking_secgroup_rule_v2" "allow_k8s_api" {
   port_range_min    = 6443
   port_range_max    = 6443
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.default.id
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
 }
 
 # Allow HTTP traffic (Port 80)
@@ -172,5 +178,5 @@ resource "openstack_networking_secgroup_rule_v2" "allow_http" {
   port_range_min    = 80
   port_range_max    = 80
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.default.id
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
 }
