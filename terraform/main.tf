@@ -1,32 +1,28 @@
 # Master Node
 resource "openstack_compute_instance_v2" "poiderosa_k8s_master" {
   name      = "poiderosa-k8s-master"
-  flavor_id = "general.large"
-  image_id  = "ubuntu-22.04"
-  key_pair  = openstack_compute_keypair_v2.default.name
+  flavor_id = "69495bdc-cc5a-4596-9b0a-e2c30956df46"
+  image_id  = "62dee28f-987d-40f5-a308-051d59991da8"
+  key_pair  = openstack_compute_keypair_v2.poiderosas-kp.name
   security_groups = ["projeto-poiderosas-sg"]
-
+  
   network {
     uuid = "8e9133dd-0907-42f2-866d-c7ad2af7eb9c"
   }
-
-  floating_ip = openstack_networking_floatingip_v2.master_floating_ip.address
 }
 
 # Worker Nodes
 resource "openstack_compute_instance_v2" "poiderosa_k8s_worker" {
   count     = 2
   name      = "poiderosa-k8s-worker-${count.index}"
-  flavor_id = "general.large"
-  image_id  = "ubuntu-22.04"
-  key_pair  = openstack_compute_keypair_v2.default.name
+  flavor_id = "69495bdc-cc5a-4596-9b0a-e2c30956df46"
+  image_id  = "62dee28f-987d-40f5-a308-051d59991da8"
+  key_pair  = openstack_compute_keypair_v2.poiderosas-kp.name
   security_groups = ["projeto-poiderosas-sg"]
 
   network {
     uuid = "8e9133dd-0907-42f2-866d-c7ad2af7eb9c"
   }
-
-  floating_ip = openstack_networking_floatingip_v2.worker_floating_ip[count.index].address
 }
 
 # Security group
@@ -35,28 +31,12 @@ resource "openstack_networking_secgroup_v2" "poiderosas_sg" {
   description = "Security group for Poiderosa Kubernetes cluster"
 }
 
-# Floating IP for Master
-resource "openstack_networking_floatingip_v2" "master_floating_ip" {
-  pool = "public"
-}
-
-# Floating IPs for Worker Nodes
-resource "openstack_networking_floatingip_v2" "worker_floating_ip" {
-  count = 2
-  pool  = "public"
-}
-
-# Data source to reference existing load balancer
-data "openstack_lb_loadbalancer_v2" "poi_atividades" {
-  name = "poi-atividades"
-}
-
 # TCP Listener for Load Balancer
 resource "openstack_lb_listener_v2" "poiderosa_tcp_listener" {
   name            = "poiderosa-tcp-listener"
   protocol        = "TCP"
   protocol_port   = 25180
-  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
+  loadbalancer_id = "poi-atividades"
 }
 
 # Pool for TCP traffic
@@ -92,7 +72,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_master" {
   name            = "poiderosa-master-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22119
-  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
+  loadbalancer_id = "poi-atividades"
 }
 
 # SSH Listener for Worker 1 Node
@@ -100,7 +80,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_1" {
   name            = "poiderosa-worker-1-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22120
-  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
+  loadbalancer_id = "poi-atividades"
 }
 
 # SSH Listener for Worker 2 Node
@@ -108,7 +88,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_2" {
   name            = "poiderosa-worker-2-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22121
-  loadbalancer_id = data.openstack_lb_loadbalancer_v2.poi_atividades.id
+  loadbalancer_id = "poi-atividades"
 }
 
 # SSH Pool for Master Node
@@ -159,24 +139,97 @@ resource "openstack_lb_member_v2" "poiderosa_ssh_member_worker_2" {
   subnet_id      = "17de9c72-e5dc-4da0-ae0a-013f7e42400e"
 }
 
-# Allow Kubernetes API access (Port 6443)
-resource "openstack_networking_secgroup_rule_v2" "allow_k8s_api" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "tcp"
-  port_range_min    = 6443
-  port_range_max    = 6443
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
-}
-
 # Allow HTTP traffic (Port 80)
 resource "openstack_networking_secgroup_rule_v2" "allow_http" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "tcp"
+  protocol          = "TCP"
   port_range_min    = 80
   port_range_max    = 80
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+}
+
+# Allow Kubernetes API server (Port 6443)
+resource "openstack_networking_secgroup_rule_v2" "allow_k8s_api" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 6443
+  port_range_max    = 6443
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "Kubernetes API server"
+}
+
+# Allow etcd server client API (Ports 2379-2380)
+resource "openstack_networking_secgroup_rule_v2" "allow_etcd_api" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 2379
+  port_range_max    = 2380
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "etcd server client API"
+}
+
+# Allow Kubelet API (Port 10250)
+resource "openstack_networking_secgroup_rule_v2" "allow_kubelet_api" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 10250
+  port_range_max    = 10250
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "Kubelet API"
+}
+
+# Allow kube-scheduler (Port 10259)
+resource "openstack_networking_secgroup_rule_v2" "allow_kube_scheduler" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 10259
+  port_range_max    = 10259
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "kube-scheduler"
+}
+
+# Allow kube-controller-manager (Port 10257)
+resource "openstack_networking_secgroup_rule_v2" "allow_kube_controller_manager" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 10257
+  port_range_max    = 10257
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "kube-controller-manager"
+}
+
+# Allow kube-proxy (Port 10256)
+resource "openstack_networking_secgroup_rule_v2" "allow_kube_proxy" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 10256
+  port_range_max    = 10256
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "kube-proxy"
+}
+
+# Allow NodePort Services (Ports 30000-32767)
+resource "openstack_networking_secgroup_rule_v2" "allow_nodeport_services" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "TCP"
+  port_range_min    = 30000
+  port_range_max    = 32767
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
+  description       = "NodePort Services"
 }
