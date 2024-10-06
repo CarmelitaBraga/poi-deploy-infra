@@ -1,0 +1,101 @@
+---
+# tasks file for kubernetes-playbook
+---
+- name: Instalacao e configuracao das aplicacoes docker e kubernetes
+  hosts: all
+  become: true
+  tasks:
+    - name: Atualizar e fazer upgrade dos pacotes
+      apt:
+        update_cache: yes
+        upgrade: yes
+
+    - name: Instalar o Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Iniciar e habilitar o Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Adicionar usuario ao grupo Docker
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Criar novo grupo para o Docker
+      command: newgrp docker
+
+    - name: Criar pasta keyrings em /etc/apt (se nao existir)
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Adicionar chave GPG do repositorio Kubernetes
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Adicionar repositorio Kubernetes
+      apt_repository:
+        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+        state: present
+
+    - name: Instalar kubeadm, kubelet e kubectl
+      apt:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Instalar containerd
+      apt:
+        name: containerd
+        state: present
+
+    - name: Garantir que o kubelet esta habilitado e em execucao
+      systemd:
+        name: kubelet
+        enabled: true
+        state: started
+
+- name: Inicializar Kubernetes no Control-Plane
+  hosts: control-plane
+  become: true
+  tasks:
+    - name: Inicializar o Kubernetes control-plane
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_init
+
+    - name: Configurar kubectl para o usuario root
+      shell: |
+        mkdir -p $HOME/.kube
+        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+        chown $(id -u):$(id -g) $HOME/.kube/config
+      when: kubeadm_init is changed
+
+    - name: Extrair comando de join do Kubernetes
+      command: kubeadm token create --print-join-command
+      register: join_command
+      when: kubeadm_init is changed
+
+    - name: Salvar comando de join para uso posterior
+      local_action: copy content="{{ join_command.stdout }}" dest="/tmp/join_command.txt"
+      when: kubeadm_init is changed
+
+- name: Juntar Workers ao cluster
+  hosts: workers
+  become: true
+  tasks:
+    - name: Executar comando de join nos workers
+      command: "{{ lookup('file', '/tmp/join_command.txt') }}"
+      environment:
+        KUBECONFIG: "/etc/kubernetes/kubelet.conf"
+

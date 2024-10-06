@@ -1,0 +1,7 @@
+[control-plane]
+poiderosa_k8s_master ansible_host=150.165.85.13 ansible_port=EDITAR ansible_user=USUARIO
+
+[workers]
+poiderosa-k8s-worker-1 ansible_host=150.165.85.13 ansible_port=EDITAR ansible_user=USUARIO
+poiderosa-k8s-worker-2 ansible_host=150.165.85.13 ansible_port=EDITAR ansible_user=USUARIO
+
