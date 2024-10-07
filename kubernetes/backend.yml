@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: projetin
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      containers:
+      - name: projetin-backend
+        image: carmelitabraga/projetin-backend:v1
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: app-config
+        volumeMounts:
+        - name: backend-storage
+          mountPath: /projetin
+        command: ["/bin/sh", "-c", "python3 manage.py makemigrations && python3 manage.py migrate && python3 manage.py iniciar && python3 manage.py runserver 0.0.0.0:8000"]
+      volumes:
+      - name: backend-storage
+        persistentVolumeClaim:
+        claimName: backend-pvc
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: projetin
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: backend
+  type: ClusterIP
