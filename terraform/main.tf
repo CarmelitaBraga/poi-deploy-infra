@@ -31,15 +31,15 @@ resource "openstack_networking_secgroup_v2" "poiderosas_sg" {
   description = "Security group for Poiderosa Kubernetes cluster"
 }
 
-# TCP Listener for Load Balancer
+# tcp Listener for Load Balancer
 resource "openstack_lb_listener_v2" "poiderosa_tcp_listener" {
   name            = "poiderosa-tcp-listener"
   protocol        = "TCP"
   protocol_port   = 25180
-  loadbalancer_id = "poi-atividades"
+  loadbalancer_id = "887e9ffd-790a-47a1-b9d7-bc8073dc4931"
 }
 
-# Pool for TCP traffic
+# Pool for tcp traffic
 resource "openstack_lb_pool_v2" "poiderosa_tcp_pool" {
   name        = "poiderosas-projeto-tcp-pool"
   protocol    = "TCP"
@@ -72,7 +72,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_master" {
   name            = "poiderosa-master-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22119
-  loadbalancer_id = "poi-atividades"
+  loadbalancer_id = "887e9ffd-790a-47a1-b9d7-bc8073dc4931"
 }
 
 # SSH Listener for Worker 1 Node
@@ -80,7 +80,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_1" {
   name            = "poiderosa-worker-1-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22120
-  loadbalancer_id = "poi-atividades"
+  loadbalancer_id = "887e9ffd-790a-47a1-b9d7-bc8073dc4931"
 }
 
 # SSH Listener for Worker 2 Node
@@ -88,7 +88,7 @@ resource "openstack_lb_listener_v2" "poiderosa_ssh_listener_worker_2" {
   name            = "poiderosa-worker-2-ssh-listener"
   protocol        = "TCP"
   protocol_port   = 22121
-  loadbalancer_id = "poi-atividades"
+  loadbalancer_id = "887e9ffd-790a-47a1-b9d7-bc8073dc4931"
 }
 
 # SSH Pool for Master Node
