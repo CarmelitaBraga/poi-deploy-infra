@@ -1,0 +1,16 @@
+# deploy-applications/defaults/main.yml
+---
+# Variáveis do Docker
+front_image: "meufront-image:latest"        # Nome da imagem do front no Docker Hub
+back_image: "meuback-image:latest"          # Nome da imagem do back no Docker Hub
+front_container_name: "front_container"
+back_container_name: "back_container"
+
+# Banco de Dados (PostgreSQL)
+db_image: "postgres:latest"                  
+db_container_name: "postgres_container"       
+db_port: 5432                                 
+db_data_dir: "/var/lib/postgresql/data"       
+db_user: "meu_usuario"                        
+db_password: "minha_senha"                    
+db_name: "minha_database"   

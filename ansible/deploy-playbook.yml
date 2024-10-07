@@ -1,0 +1,6 @@
+# deploy.yml
+---
+- hosts: all
+  become: true
+  roles:
+    - deploy-applications

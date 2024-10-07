@@ -1,0 +1,70 @@
+# deploy-applications/tasks/main.yml
+---
+# Instalar Docker
+- name: Garantir que o Docker está instalado
+  apt:
+    name: docker.io
+    state: present
+  become: true
+
+- name: Iniciar e habilitar o serviço Docker
+  systemd:
+    name: docker
+    state: started
+    enabled: true
+  become: true
+
+# Banco de Dados
+
+# Deploy do banco de dados PostgreSQL (Docker)
+- name: Garantir que a imagem Docker do PostgreSQL está presente
+  docker_image:
+    name: "{{ db_image }}"
+    source: pull
+
+- name: Executar o container do PostgreSQL
+  docker_container:
+    name: "{{ db_container_name }}"
+    image: "{{ db_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ db_port }}:5432"  # Porta de conexão
+    env:
+      POSTGRES_USER: "{{ db_user }}"
+      POSTGRES_PASSWORD: "{{ db_password }}"
+      POSTGRES_DB: "{{ db_name }}"
+    volumes:
+      - "/data/postgres:/var/lib/postgresql/data"  # Monta o volume para persistir os dados
+
+
+# Deploy Front-end (Docker)
+- name: Garantir que a imagem Docker do Front-end está presente
+  docker_image:
+    name: "{{ front_image }}"
+    source: pull
+
+- name: Executar o container do Front-end
+  docker_container:
+    name: "{{ front_container_name }}"
+    image: "{{ front_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "3000:3000"    # Ajuste as portas conforme necessário
+
+# Deploy Back-end (Docker)
+- name: Garantir que a imagem Docker do Back-end está presente
+  docker_image:
+    name: "{{ back_image }}"
+    source: pull
+
+- name: Executar o container do Back-end
+  docker_container:
+    name: "{{ back_container_name }}"
+    image: "{{ back_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:8080"  # Ajuste as portas conforme necessário
+
