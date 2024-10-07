@@ -1,27 +1,27 @@
-# deploy-applications/tasks/main.yml
+# tasks/main.yml
 ---
-# Instalar Docker
-- name: Garantir que o Docker está instalado
-  apt:
-    name: docker.io
+# Criar rede Docker para as aplicações
+- name: Criar rede Docker para as aplicações
+  docker_network:
+    name: app_network
     state: present
-  become: true
-
-- name: Iniciar e habilitar o serviço Docker
-  systemd:
-    name: docker
-    state: started
-    enabled: true
-  become: true
 
 # Banco de Dados
+- name: Garantir que o diretório de dados do PostgreSQL existe
+  file:
+    path: /data/postgres
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
 
-# Deploy do banco de dados PostgreSQL (Docker)
+# Garantir que a imagem Docker do PostgreSQL está presente
 - name: Garantir que a imagem Docker do PostgreSQL está presente
   docker_image:
     name: "{{ db_image }}"
     source: pull
 
+# Executar o container do PostgreSQL
 - name: Executar o container do PostgreSQL
   docker_container:
     name: "{{ db_container_name }}"
@@ -35,30 +35,18 @@
       POSTGRES_PASSWORD: "{{ db_password }}"
       POSTGRES_DB: "{{ db_name }}"
     volumes:
-      - "/data/postgres:/var/lib/postgresql/data"  # Monta o volume para persistir os dados
-
-
-# Deploy Front-end (Docker)
-- name: Garantir que a imagem Docker do Front-end está presente
-  docker_image:
-    name: "{{ front_image }}"
-    source: pull
-
-- name: Executar o container do Front-end
-  docker_container:
-    name: "{{ front_container_name }}"
-    image: "{{ front_image }}"
-    state: started
-    restart_policy: always
-    ports:
-      - "3000:3000"    # Ajuste as portas conforme necessário
+      - "/data/postgres:/var/lib/postgresql/data"
+    networks:
+      - name: app_network
 
 # Deploy Back-end (Docker)
+# Garantir que a imagem Docker do Back-end está presente
 - name: Garantir que a imagem Docker do Back-end está presente
   docker_image:
     name: "{{ back_image }}"
     source: pull
 
+# Executar o container do Back-end na rede
 - name: Executar o container do Back-end
   docker_container:
     name: "{{ back_container_name }}"
@@ -66,5 +54,27 @@
     state: started
     restart_policy: always
     ports:
-      - "8080:8080"  # Ajuste as portas conforme necessário
+      - "8080:8080"
+    env: "{{ back_env }}"
+    networks:
+      - name: app_network
 
+# Deploy Front-end (Docker)
+# Garantir que a imagem Docker do Front-end está presente
+- name: Garantir que a imagem Docker do Front-end está presente
+  docker_image:
+    name: "{{ front_image }}"
+    source: pull
+
+# Executar o container do Front-end na rede
+- name: Executar o container do Front-end
+  docker_container:
+    name: "{{ front_container_name }}"
+    image: "{{ front_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "80:80"
+    env: "{{ front_env }}"
+    networks:
+      - name: app_network
