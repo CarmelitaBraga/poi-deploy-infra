@@ -60,7 +60,7 @@ resource "openstack_lb_member_v2" "poiderosa_tcp_members" {
 resource "openstack_networking_secgroup_rule_v2" "allow_ssh" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = "0.0.0.0/0"
@@ -143,7 +143,7 @@ resource "openstack_lb_member_v2" "poiderosa_ssh_member_worker_2" {
 resource "openstack_networking_secgroup_rule_v2" "allow_http" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 80
   port_range_max    = 80
   remote_ip_prefix  = "0.0.0.0/0"
@@ -154,7 +154,7 @@ resource "openstack_networking_secgroup_rule_v2" "allow_http" {
 resource "openstack_networking_secgroup_rule_v2" "allow_k8s_api" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 6443
   port_range_max    = 6443
   remote_ip_prefix  = "0.0.0.0/0"
@@ -166,7 +166,7 @@ resource "openstack_networking_secgroup_rule_v2" "allow_k8s_api" {
 resource "openstack_networking_secgroup_rule_v2" "allow_etcd_api" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 2379
   port_range_max    = 2380
   remote_ip_prefix  = "0.0.0.0/0"
@@ -178,7 +178,7 @@ resource "openstack_networking_secgroup_rule_v2" "allow_etcd_api" {
 resource "openstack_networking_secgroup_rule_v2" "allow_kubelet_api" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 10250
   port_range_max    = 10250
   remote_ip_prefix  = "0.0.0.0/0"
@@ -186,47 +186,23 @@ resource "openstack_networking_secgroup_rule_v2" "allow_kubelet_api" {
   description       = "Kubelet API"
 }
 
-# Allow kube-scheduler (Port 10259)
-resource "openstack_networking_secgroup_rule_v2" "allow_kube_scheduler" {
+# Allow kube-proxy (Port 10256), kube-controller-manager (Port 10257) and kube-scheduler (Port 10259)
+resource "openstack_networking_secgroup_rule_v2" "allow_kubernetes_services" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
-  port_range_min    = 10259
+  protocol          = "tcp"
+  port_range_min    = 10256
   port_range_max    = 10259
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
-  description       = "kube-scheduler"
-}
-
-# Allow kube-controller-manager (Port 10257)
-resource "openstack_networking_secgroup_rule_v2" "allow_kube_controller_manager" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "TCP"
-  port_range_min    = 10257
-  port_range_max    = 10257
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
-  description       = "kube-controller-manager"
-}
-
-# Allow kube-proxy (Port 10256)
-resource "openstack_networking_secgroup_rule_v2" "allow_kube_proxy" {
-  direction         = "ingress"
-  ethertype         = "IPv4"
-  protocol          = "TCP"
-  port_range_min    = 10256
-  port_range_max    = 10256
-  remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.poiderosas_sg.id
-  description       = "kube-proxy"
+  description       = "Allow kube-scheduler, kube-controller-manager, and kube-proxy"
 }
 
 # Allow NodePort Services (Ports 30000-32767)
 resource "openstack_networking_secgroup_rule_v2" "allow_nodeport_services" {
   direction         = "ingress"
   ethertype         = "IPv4"
-  protocol          = "TCP"
+  protocol          = "tcp"
   port_range_min    = 30000
   port_range_max    = 32767
   remote_ip_prefix  = "0.0.0.0/0"
