@@ -1,15 +1,9 @@
 ---
 # tasks file for kubernetes-playbook
----
 - name: Instalacao e configuracao das aplicacoes docker e kubernetes
   hosts: all
   become: true
   tasks:
-    - name: Atualizar e fazer upgrade dos pacotes
-      apt:
-        update_cache: yes
-        upgrade: yes
-
     - name: Instalar o Docker
       apt:
         name: docker.io
@@ -27,23 +21,20 @@
         groups: docker
         append: yes
 
-    - name: Criar novo grupo para o Docker
-      command: newgrp docker
-
     - name: Criar pasta keyrings em /etc/apt (se nao existir)
       file:
         path: /etc/apt/keyrings
         state: directory
         mode: '0755'
 
-    - name: Adicionar chave GPG do repositorio Kubernetes
-      apt_key:
+    - name: Download apt key
+      get_url:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        state: present
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
 
-    - name: Adicionar repositorio Kubernetes
-      apt_repository:
-        repo: "deb https://apt.kubernetes.io/ kubernetes-xenial main"
+    - name: Add a key from a file
+      ansible.builtin.apt_key:
+        file: /etc/apt/keyrings/kubernetes-apt-keyring.asc
         state: present
 
     - name: Instalar kubeadm, kubelet e kubectl
