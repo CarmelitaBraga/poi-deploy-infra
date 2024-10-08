@@ -30,11 +30,11 @@
     - name: Download apt key
       get_url:
         url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
-        dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
     - name: Add a key from a file
       ansible.builtin.apt_key:
-        file: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+        file: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
         state: present
 
     - name: Instalar kubeadm, kubelet e kubectl
@@ -51,42 +51,4 @@
         name: containerd
         state: present
 
-    - name: Garantir que o kubelet esta habilitado e em execucao
-      systemd:
-        name: kubelet
-        enabled: true
-        state: started
-
-- name: Inicializar Kubernetes no Control-Plane
-  hosts: control-plane
-  become: true
-  tasks:
-    - name: Inicializar o Kubernetes control-plane
-      command: kubeadm init --pod-network-cidr=10.244.0.0/16
-      register: kubeadm_init
-
-    - name: Configurar kubectl para o usuario root
-      shell: |
-        mkdir -p $HOME/.kube
-        cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-        chown $(id -u):$(id -g) $HOME/.kube/config
-      when: kubeadm_init is changed
-
-    - name: Extrair comando de join do Kubernetes
-      command: kubeadm token create --print-join-command
-      register: join_command
-      when: kubeadm_init is changed
-
-    - name: Salvar comando de join para uso posterior
-      local_action: copy content="{{ join_command.stdout }}" dest="/tmp/join_command.txt"
-      when: kubeadm_init is changed
-
-- name: Juntar Workers ao cluster
-  hosts: workers
-  become: true
-  tasks:
-    - name: Executar comando de join nos workers
-      command: "{{ lookup('file', '/tmp/join_command.txt') }}"
-      environment:
-        KUBECONFIG: "/etc/kubernetes/kubelet.conf"
 

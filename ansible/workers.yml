@@ -1,0 +1,8 @@
+- name: Juntar Workers ao cluster
+  hosts: workers
+  become: true
+  tasks:
+    - name: Executar comando de join nos workers
+      command: "{{ lookup('file', '/tmp/join_command.txt') }}"
+      environment:
+        KUBECONFIG: "/etc/kubernetes/kubelet.conf"
