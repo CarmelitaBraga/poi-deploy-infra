@@ -1,8 +1,6 @@
 [control-plane]
-poiderosa_k8s_master ansible_host=150.165.85.13 ansible_port=22119 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key
+poiderosa_k8s_master ansible_host=150.165.85.13 ansible_port=22119 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key ansible_ssh_common_args='-o ControlMaster=auto -o ControlPersist=120s -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o StrictHostKeyChecking=no'
 
 [workers]
-
-poiderosa-k8s-worker-0 ansible_host=150.165.85.13 ansible_port=22120 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key 
-poiderosa-k8s-worker-1 ansible_host=150.165.85.13 ansible_port=22121 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key 
-
+poiderosa-k8s-worker-0 ansible_host=150.165.85.13 ansible_port=22120 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key ansible_ssh_common_args='-o ControlMaster=auto -o ControlPersist=120s -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o StrictHostKeyChecking=no'
+poiderosa-k8s-worker-1 ansible_host=150.165.85.13 ansible_port=22121 ansible_user=ubuntu ansible_ssh_private_key_file=./poiderosas-key ansible_ssh_common_args='-o ControlMaster=auto -o ControlPersist=120s -o ServerAliveInterval=30 -o ServerAliveCountMax=10 -o StrictHostKeyChecking=no'

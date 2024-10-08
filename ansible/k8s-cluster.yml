@@ -1,32 +1,40 @@
+---
 - hosts: control-plane
   become: yes
   tasks:
-  
-    - name: Create kube directory
+    - name: Inicializar Kubernetes com kubeadm
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_output
+
+    - name: Extrair parâmetros do output do kubeadm
+      set_fact:
+        token: "{{ kubeadm_output.stdout | regex_search('(?<=token )\\S+') }}"
+        discovery_token_ca_cert_hash: "{{ kubeadm_output.stdout | regex_search('(?<=discovery-token-ca-cert-hash sha256:)\\S+') }}"
+    
+    - name: Criar diretório .kube para user
       file:
-        path: /home/{{ ansible_user }}/.kube
+        path: "{{ ansible_env.HOME }}/.kube"
         state: directory
-        mode: 0700
+        mode: '0755'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
 
-    - name: Copy admin.conf to kube config
-      command: cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
+    - name: Copiar configuração do kube admin para o diretório .kube
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: yes
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: '0644'
 
-    - name: Change ownership of kube config
-      command: chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config
-
-    - name: Set kubeconfig context
-      command: kubectl config use-context kubernetes-admin@kubernetes
-
-    - name: Apply Flannel CNI plugin
+    - name: Aplicar plugin da Rede Flannel
       command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
       environment:
-        KUBECONFIG: /home/{{ ansible_user }}/.kube/config
+        KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config"
 
 - hosts: workers
   become: yes
   tasks:
-    - name: Join worker node to the Kubernetes cluster (worker node 0)
-      command: kubeadm join 10.5.10.1:6443 --token e93bqp.xwzbk2ryyznxilsn --discovery-token-ca-cert-hash sha256:47e253d74bce785fcde851da728aebe83d1d32ceeae99defb12459b50df24f45
-
-    - name: Join worker node to the Kubernetes cluster (worker node 1)
-      command: kubeadm join 10.5.10.1:6443 --token e93bqp.xwzbk2ryyznxilsn --discovery-token-ca-cert-hash sha256:47e253d74bce785fcde851da728aebe83d1d32ceeae99defb12459b50df24f45
+    - name: Adicionar worker nodes ao cluster
+      shell: "kubeadm join 10.5.10.1:6443 --token {{ hostvars['poiderosa_k8s_master'].token }} --discovery-token-ca-cert-hash sha256:{{ hostvars['poiderosa_k8s_master'].discovery_token_ca_cert_hash }}"

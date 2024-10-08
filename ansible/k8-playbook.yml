@@ -1,5 +1,4 @@
 ---
-# tasks file for kubernetes-playbook
 - name: Instalacao e configuracao das aplicacoes docker e kubernetes
   hosts: all
   become: true
@@ -39,7 +38,7 @@
 
     - name: Instalar kubeadm, kubelet e kubectl
       apt:
-        name: "{{ item }}"
+        name: "{{ item }}=1.30.0-1.1"
         state: present
       loop:
         - kubelet
@@ -50,5 +49,3 @@
       apt:
         name: containerd
         state: present
-
-
