@@ -1,0 +1,32 @@
+- hosts: control-plane
+  become: yes
+  tasks:
+  
+    - name: Create kube directory
+      file:
+        path: /home/{{ ansible_user }}/.kube
+        state: directory
+        mode: 0700
+
+    - name: Copy admin.conf to kube config
+      command: cp /etc/kubernetes/admin.conf /home/{{ ansible_user }}/.kube/config
+
+    - name: Change ownership of kube config
+      command: chown {{ ansible_user }}:{{ ansible_user }} /home/{{ ansible_user }}/.kube/config
+
+    - name: Set kubeconfig context
+      command: kubectl config use-context kubernetes-admin@kubernetes
+
+    - name: Apply Flannel CNI plugin
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/{{ ansible_user }}/.kube/config
+
+- hosts: workers
+  become: yes
+  tasks:
+    - name: Join worker node to the Kubernetes cluster (worker node 0)
+      command: kubeadm join 10.5.10.1:6443 --token e93bqp.xwzbk2ryyznxilsn --discovery-token-ca-cert-hash sha256:47e253d74bce785fcde851da728aebe83d1d32ceeae99defb12459b50df24f45
+
+    - name: Join worker node to the Kubernetes cluster (worker node 1)
+      command: kubeadm join 10.5.10.1:6443 --token e93bqp.xwzbk2ryyznxilsn --discovery-token-ca-cert-hash sha256:47e253d74bce785fcde851da728aebe83d1d32ceeae99defb12459b50df24f45

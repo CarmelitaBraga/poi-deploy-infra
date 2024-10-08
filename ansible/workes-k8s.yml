@@ -1,0 +1,8 @@
+- hosts: workers
+  become: yes
+  tasks:
+    - name: Join worker node to the Kubernetes cluster (worker node 0)
+      command: kubeadm join {{ control_plane_ip }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash {{ ca_cert_hash }}
+
+    - name: Join worker node to the Kubernetes cluster (worker node 1)
+      command: kubeadm join {{ control_plane_ip }}:6443 --token {{ kubeadm_token }} --discovery-token-ca-cert-hash {{ ca_cert_hash }}
