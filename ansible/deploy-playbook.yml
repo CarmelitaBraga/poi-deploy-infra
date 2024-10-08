@@ -1,6 +1,114 @@
-# deploy.yml
 ---
 - hosts: all
   become: true
-  roles:
-    - deploy-applications
+  tasks:
+    - name: Login no Docker Hub
+      docker_login:
+        username: "juliaokm"
+        password: "jujubinai1"
+
+    # Criar rede Docker para as aplicações
+    - name: Criar rede Docker para as aplicações
+      docker_network:
+        name: app_network
+        state: present
+
+    # Banco de Dados
+    - name: Garantir que o diretório de dados do PostgreSQL existe
+      file:
+        path: /data/postgres
+        state: directory
+        owner: root
+        group: root
+        mode: '0755'
+
+    # Garantir que a imagem Docker do PostgreSQL está presente
+    - name: Garantir que a imagem Docker do PostgreSQL está presente
+      docker_image:
+        name: "postgres:latest"
+        source: pull
+
+    # Executar o container do PostgreSQL
+    - name: Executar o container do PostgreSQL
+      docker_container:
+        name: "postgres_container"
+        image: "postgres:latest"
+        state: started
+        restart_policy: always
+        ports:
+          - "5432:5432"
+        env:
+          POSTGRES_USER: "meu_usuario"
+          POSTGRES_PASSWORD: "minha_senha"
+          POSTGRES_DB: "minha_database"
+        volumes:
+          - "/data/postgres:/var/lib/postgresql/data"
+        networks:
+          - name: app_network
+
+
+    # Deploy Back-end (Docker)
+    - name: Garantir que a imagem Docker do Back-end está presente
+      docker_image:
+        name: "carmelitabraga/projetin-backend:v1"
+        source: pull
+
+    # Executar o container do Back-end
+    - name: Executar o container do Back-end
+      docker_container:
+        name: "back_container"
+        image: "carmelitabraga/projetin-backend:v1"
+        state: started
+        restart_policy: always
+        ports:
+          - "8080:8080"
+        env:
+          DB_HOST: "postgres_container"
+          DB_PORT: "5432"
+          DB_USER: "meu_usuario"
+          DB_PASSWORD: "minha_senha"
+          DB_NAME: "minha_database"
+          SECRET_KEY: "django-insecure-80*zzycuuejq47jtjf(2)mk6(trdjtwtdnd_tj35x5=!n8da-d"
+          CORS_ALLOWED_ORIGINS: "http://10.96.0.1"
+        command: >
+          /bin/sh -c "python3 manage.py makemigrations &&
+                       python3 manage.py migrate &&
+                       python3 manage.py runserver 0.0.0.0:8000"
+
+        networks:
+          - name: app_network
+
+    # Deploy Front-end (Docker)
+    - name: Garantir que a imagem Docker do Front-end está presente
+      docker_image:
+        name: "carmelitabraga/projetin-frontend:v1"
+        source: pull
+
+    - name: Executar o container do Front-end
+      docker_container:
+        name: "front_container"
+        image: "carmelitabraga/projetin-frontend:v1"
+        state: started
+        restart_policy: always
+        ports:
+          - "10000:10000"
+        env:
+          NEXT_PUBLIC_APP_NAME: "projetin_esinco"
+          NEXT_PUBLIC_APP_PRETTY_NAME: "ProjetIn"
+          NEXT_PUBLIC_API_URL: "http://back_container:8080"
+        command: >
+          /bin/sh -c "npm run setup-prod && npm run start"
+        networks:
+          - name: app_network
+
+    # # Executar comandos no container do Back-end
+    # - name: Executar comandos no container do Back-end
+    #   command: >
+    #     docker exec back_container /bin/sh -c "python3 manage.py makemigrations &&
+    #                                              python3 manage.py migrate &&
+    #                                              python3 manage.py runserver 0.0.0.0:8000"
+      
+    # # Executar comandos no container do Front-end
+    # - name: Executar comandos no container do Front-end
+    #   command: >
+    #     docker exec front_container /bin/sh -c "npm run setup-prod && npm run start"
