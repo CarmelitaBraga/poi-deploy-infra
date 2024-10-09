@@ -4,8 +4,8 @@
   tasks:
     - name: Login to Docker Hub
       docker_login:
-        username: "juliaokm"
-        password: "jujubinai1"
+        username: ""
+        password: ""
 
     - name: Create Docker network for applications
       docker_network:
