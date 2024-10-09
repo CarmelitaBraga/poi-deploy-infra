@@ -1,0 +1,40 @@
+---
+- hosts: control-plane
+  become: yes
+  tasks:
+    - name: Inicializar Kubernetes com kubeadm
+      shell: kubeadm init --pod-network-cidr=10.244.0.0/16
+      register: kubeadm_output
+
+    - name: Extrair parâmetros do output do kubeadm
+      set_fact:
+        token: "{{ kubeadm_output.stdout | regex_search('(?<=token )\\S+') }}"
+        discovery_token_ca_cert_hash: "{{ kubeadm_output.stdout | regex_search('(?<=discovery-token-ca-cert-hash sha256:)\\S+') }}"
+    
+    - name: Criar diretório .kube para user
+      file:
+        path: "{{ ansible_env.HOME }}/.kube"
+        state: directory
+        mode: '0755'
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+
+    - name: Copiar configuração do kube admin para o diretório .kube
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: yes
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_gid }}"
+        mode: '0644'
+
+    - name: Aplicar plugin da Rede Flannel
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
+      environment:
+        KUBECONFIG: "{{ ansible_env.HOME }}/.kube/config"
+
+- hosts: workers
+  become: yes
+  tasks:
+    - name: Adicionar worker nodes ao cluster
+      shell: "kubeadm join 10.5.10.1:6443 --token {{ hostvars['poiderosa_k8s_master'].token }} --discovery-token-ca-cert-hash sha256:{{ hostvars['poiderosa_k8s_master'].discovery_token_ca_cert_hash }}"

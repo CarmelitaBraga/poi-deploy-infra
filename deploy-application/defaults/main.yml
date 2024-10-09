@@ -1,0 +1,28 @@
+# deploy-applications/defaults/main.yml
+---
+# Variáveis do Docker
+front_image: "carmelitabraga/projetin-frontend"       
+front_container_name: "front_container"
+front_env:
+  - NEXT_PUBLIC_APP_NAME: "projetin_esinco"
+  - NEXT_PUBLIC_APP_PRETTY_NAME: "ProjetIn"
+  - NEXT_PUBLIC_API_URL: "http://back_container:8080"  
+
+back_image: "carmelitabraga/projetin-backend:latest"  
+back_container_name: "back_container"
+back_container_name: "back_container"
+back_env:
+  - DB_HOST: "db_container"
+  - DB_PORT: "5432"
+  - DB_USER: "meu_usuario"
+  - DB_PASSWORD: "minha_senha"
+  - DB_NAME: "minha_database"
+  
+# Banco de Dados (PostgreSQL)
+db_image: "postgres:latest"                  
+db_container_name: "postgres_container"       
+db_port: 5432                                 
+db_data_dir: "/var/lib/postgresql/data"       
+db_user: "meu_usuario"                        
+db_password: "minha_senha"                    
+db_name: "minha_database"   
