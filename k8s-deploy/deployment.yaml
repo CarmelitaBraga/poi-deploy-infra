@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+   name: poiderosa-deploy
+spec: 
+  replicas: 3
+  selector: 
+    matchLabels:
+      app: poiderosas
+  template:
+    metadata:
+      labels:
+        app: poiderosas
+    spec:
+      containers:
+      - name: poiderosa-v2-containers
+        image: carmelitabraga/fibonacci-carmelita-container:v1
+---
+
+kind: Service
+apiVersion: v1
+metadata:
+  name: poiderosa-v2-service
+spec:
+  type: NodePort
+  selector:
+    app: poiderosas
+  ports:
+    - port: 5001
+      targetPort: 8080
+      protocol: TCP

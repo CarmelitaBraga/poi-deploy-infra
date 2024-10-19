@@ -1,0 +1,80 @@
+# tasks/main.yml
+---
+# Criar rede Docker para as aplicações
+- name: Criar rede Docker para as aplicações
+  docker_network:
+    name: app_network
+    state: present
+
+# Banco de Dados
+- name: Garantir que o diretório de dados do PostgreSQL existe
+  file:
+    path: /data/postgres
+    state: directory
+    owner: root
+    group: root
+    mode: '0755'
+
+# Garantir que a imagem Docker do PostgreSQL está presente
+- name: Garantir que a imagem Docker do PostgreSQL está presente
+  docker_image:
+    name: "{{ db_image }}"
+    source: pull
+
+# Executar o container do PostgreSQL
+- name: Executar o container do PostgreSQL
+  docker_container:
+    name: "{{ db_container_name }}"
+    image: "{{ db_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "{{ db_port }}:5432"  # Porta de conexão
+    env:
+      POSTGRES_USER: "{{ db_user }}"
+      POSTGRES_PASSWORD: "{{ db_password }}"
+      POSTGRES_DB: "{{ db_name }}"
+    volumes:
+      - "/data/postgres:/var/lib/postgresql/data"
+    networks:
+      - name: app_network
+
+# Deploy Back-end (Docker)
+# Garantir que a imagem Docker do Back-end está presente
+- name: Garantir que a imagem Docker do Back-end está presente
+  docker_image:
+    name: "{{ back_image }}"
+    source: pull
+
+# Executar o container do Back-end na rede
+- name: Executar o container do Back-end
+  docker_container:
+    name: "{{ back_container_name }}"
+    image: "{{ back_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "8080:8080"
+    env: "{{ back_env }}"
+    networks:
+      - name: app_network
+
+# Deploy Front-end (Docker)
+# Garantir que a imagem Docker do Front-end está presente
+- name: Garantir que a imagem Docker do Front-end está presente
+  docker_image:
+    name: "{{ front_image }}"
+    source: pull
+
+# Executar o container do Front-end na rede
+- name: Executar o container do Front-end
+  docker_container:
+    name: "{{ front_container_name }}"
+    image: "{{ front_image }}"
+    state: started
+    restart_policy: always
+    ports:
+      - "80:80"
+    env: "{{ front_env }}"
+    networks:
+      - name: app_network

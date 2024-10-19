@@ -1,0 +1,51 @@
+---
+- name: Instalacao e configuracao das aplicacoes docker e kubernetes
+  hosts: all
+  become: true
+  tasks:
+    - name: Instalar o Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Iniciar e habilitar o Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Adicionar usuario ao grupo Docker
+      user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: yes
+
+    - name: Criar pasta keyrings em /etc/apt (se nao existir)
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+
+    - name: Download apt key
+      get_url:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    - name: Add a key from a file
+      ansible.builtin.apt_key:
+        file: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        state: present
+
+    - name: Instalar kubeadm, kubelet e kubectl
+      apt:
+        name: "{{ item }}=1.30.0-1.1"
+        state: present
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Instalar containerd
+      apt:
+        name: containerd
+        state: present
